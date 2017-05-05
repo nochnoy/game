@@ -6,19 +6,21 @@
   <script src="jquery-3.2.1.min.js"></script>
   <script src="main.js"></script>
   <style>
-    body {font-family: verdana}
+    body {font-family: verdana; font-size: 11pt}
+    form {margin-top: 10px; margin-bottom:10px;}
+    img {width: 12px; height: 12px;}
   </style>
 </head>
 <body>
 
-  <h4>&malt; Walkers</h4>
+  <b>Walkers</b>
 
   <form>
     <input type="text" id="message">
-    <input type="button" value="Отправить" onclick="onSendClick()">
+    <button onclick="onSendClick()"><img src="teut.png"> Отправить</button>
   </form>
 
-  <p id="messages"></p>
+  <div id="messages"></div>
 
 </body>
 </html>
