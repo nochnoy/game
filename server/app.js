@@ -5,8 +5,6 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
-var api = require('./api');
-
 // ----------------------------------------------------------------------------
 
 
@@ -32,7 +30,7 @@ app.get('/api', (req, res) => {
   for(var name in res.param) {
     s += '"' + name + '":"' + res.param[name] + '";';
   }
-  res.send('Welcome to API: ' + s);
+  res.send('Welcome to my superAPI: ' + s);
 });
 
 app.get('/api/:cmd/:param1', (req, res) => {
@@ -40,8 +38,8 @@ app.get('/api/:cmd/:param1', (req, res) => {
     console.log(JSON.stringify(req.params, null, 4));
 });
 
-app.post('/api/:cmd', (req, res) => {
-    res.send('API received POST command ' + req.params.cmd + ' with params: <br>' + console.log(JSON.stringify(req, null, 4)));
+app.post('/api/psot', (req, res) => {
+  res.send('API received POST command with postparam=' + req.body.postparam);
 });
 
 // catch 404 and forward to error handler
