@@ -7,7 +7,21 @@ var bodyParser = require('body-parser');
 
 // ----------------------------------------------------------------------------
 
+var messages = [];
 
+// ----------------------------------------------------------------------------
+
+function addMessage(s) {
+  messages.push(s);
+}
+
+function getMessagesHTML() {
+  var s = '';
+  for(var i = 0; i < messages.length; i++) {
+    s = messages[i] + '<br>' + s;
+  }
+  return s;
+}
 
 // ----------------------------------------------------------------------------
 
@@ -38,8 +52,13 @@ app.get('/api/:cmd/:param1', (req, res) => {
     console.log(JSON.stringify(req.params, null, 4));
 });
 
-app.post('/api/psot', (req, res) => {
-  res.send('API received POST command with postparam=' + req.body.postparam);
+app.post('/api/get', (req, res) => {
+  res.send(getMessagesHTML());
+});
+
+app.post('/api/say', (req, res) => {
+  addMessage(req.body.message);
+  res.send(getMessagesHTML());
 });
 
 // catch 404 and forward to error handler
