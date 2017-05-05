@@ -1,12 +1,11 @@
-#!/usr/bin/env node
-
-/**
- * Module dependencies.
- */
-
-var app = require('../app');
-var debug = require('debug')('nochnoy:server');
+var debug = require('debug')('express2:server');
 var http = require('http');
+
+var app = require('./app');
+
+console.log('');
+console.log('\x1b[36m', '  w' ,'\x1b[0m');
+console.log('');
 
 /**
  * Get port from environment and store in Express.
