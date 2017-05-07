@@ -15,13 +15,10 @@ $(document).ready(function() {
     }
 
     onSendClick = function() {
-        var message = $('#message').val();
-
-        post('say', {message: message}, function(s) {
+        post('say', {message: $('#message').val()}, function(s) {
             showMessages(s);
         });
     }
-
 
     // -- go --
 

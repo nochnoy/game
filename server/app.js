@@ -5,14 +5,33 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+var fs = require('fs');
+
 // ----------------------------------------------------------------------------
+
+let dataFileName = 'data/data.txt';
+let newline = '\r\n';
 
 var messages = [];
+var file;
 
 // ----------------------------------------------------------------------------
+
+function onStart() {
+
+}
+
+function loadMessages() {
+
+}
 
 function addMessage(s) {
   messages.push(s);
+  fs.write(file, s + newline, (err) => {
+    if (err) {
+      throw err;
+    }
+  });
 }
 
 function getMessagesHTML() {
@@ -78,6 +97,31 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   //res.render('error');
   res.send('Error ' + err.status);
+});
+
+// -- Start -----------------------------------------------
+
+fs.readFile(dataFileName, 'utf8', (err, data) => {
+  if (err)
+    throw(err);
+
+  messages.length = 0;
+  var a = data.split(newline);
+  for(var i = 0; i < a.length; i++) {
+    var m = a[i];
+    if (m != '') {
+      messages.push(m);
+    }
+  }
+
+  file = fs.open(dataFileName, 'a', (err, fd) => {
+    if (err)
+      throw(err);
+
+    file = fd;
+    onStart();
+
+  });
 });
 
 module.exports = app;
