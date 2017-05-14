@@ -3,24 +3,20 @@
 <head>
   <title>Walkers</title>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" href="main.css">
   <script src="jquery-3.2.1.min.js"></script>
   <script src="main.js"></script>
-  <style>
-    body {font-family: verdana; font-size: 11pt}
-    form {margin-top: 10px; margin-bottom:10px;}
-    img {width: 12px; height: 12px;}
-  </style>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
-
-  <b>Walkers</b>
-
-  <form>
-    <input type="text" id="message">
-    <button onclick="onSendClick()"><img src="teut.png"> Отправить</button>
-  </form>
-
-  <div id="messages"></div>
-
+  <div id="logo"><img src="teut.png" class="teut"> Walkers</div>  
+  <div id="chat">
+    <div id="messages"></div>
+    <form>
+      <input type="text" id="message">
+      <button onclick="onSendClick()"> Send</button>
+    </form>
+  </div>
+  <div id="map"></div>
 </body>
 </html>

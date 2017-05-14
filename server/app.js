@@ -4,29 +4,24 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
 var fs = require('fs');
+
+var Obj = require('./obj');
+var Map = require('./map');
 
 // ----------------------------------------------------------------------------
 
 let dataFileName = 'data/data.txt';
 let newline = '\r\n';
 
-var messages = [];
+var map = new Map();
+var commands = [];
 var file;
 
 // ----------------------------------------------------------------------------
 
-function onStart() {
-
-}
-
-function loadMessages() {
-
-}
-
-function addMessage(s) {
-  messages.push(s);
+function addCommand(cmd) {
+  commands.push(s);
   fs.write(file, s + newline, (err) => {
     if (err) {
       throw err;
@@ -34,12 +29,8 @@ function addMessage(s) {
   });
 }
 
-function getMessagesHTML() {
-  var s = '';
-  for(var i = 0; i < messages.length; i++) {
-    s = messages[i] + '<br>' + s;
-  }
-  return s;
+function sendCommands(fromId) {
+
 }
 
 // ----------------------------------------------------------------------------
@@ -72,11 +63,11 @@ app.get('/api/:cmd/:param1', (req, res) => {
 });
 
 app.post('/api/get', (req, res) => {
-  res.send(getMessagesHTML());
+  res.send(JSON.stringify(commands));
 });
 
 app.post('/api/say', (req, res) => {
-  addMessage(req.body.message);
+  addCommand(req.body.message);
   res.send(getMessagesHTML());
 });
 
@@ -105,23 +96,27 @@ fs.readFile(dataFileName, 'utf8', (err, data) => {
   if (err)
     throw(err);
 
-  messages.length = 0;
+  commands.length = 0;
   var a = data.split(newline);
   for(var i = 0; i < a.length; i++) {
-    var m = a[i];
-    if (m != '') {
-      messages.push(m);
+    if (a[i] != '') {
+      commands.push(JSON.parse(a[i]));
     }
   }
-
+                
+  // <<<<<<<<<<<<<<
+  console.log('file not open for writing');
+  /*
   file = fs.open(dataFileName, 'a', (err, fd) => {
-    if (err)
+    if (err) {
       throw(err);
-
-    file = fd;
-    onStart();
-
+    } else {      
+      file = fd;
+    }
   });
+  */
+  // <<<<<<<<<<<<<<
+
 });
 
 module.exports = app;
