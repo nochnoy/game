@@ -21,10 +21,10 @@ var file;
 // ----------------------------------------------------------------------------
 
 function addCommand(cmd) {
-  commands.push(s);
-  fs.write(file, s + newline, (err) => {
+  commands.push(cmd);
+  fs.write(file, JSON.stringify(cmd) + newline, (err) => {
     if (err) {
-      throw err;
+      throw err + '?';
     }
   });
 }
@@ -67,8 +67,20 @@ app.post('/api/get', (req, res) => {
 });
 
 app.post('/api/say', (req, res) => {
-  addCommand(req.body.message);
+  addCommand('req.body.message');
   res.send(getMessagesHTML());
+});
+
+app.post('/api/move', (req, res) => {
+  var cmd = {
+    t:"move", 
+    id:req.body.id,
+    x:req.body.x,
+    y:req.body.y
+  }
+
+  addCommand(cmd);
+  res.send(JSON.stringify([cmd]));
 });
 
 // catch 404 and forward to error handler
@@ -98,15 +110,12 @@ fs.readFile(dataFileName, 'utf8', (err, data) => {
 
   commands.length = 0;
   var a = data.split(newline);
-  for(var i = 0; i < a.length; i++) {
-    if (a[i] != '') {
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] && a.length > 0) {
       commands.push(JSON.parse(a[i]));
     }
   }
                 
-  // <<<<<<<<<<<<<<
-  console.log('file not open for writing');
-  /*
   file = fs.open(dataFileName, 'a', (err, fd) => {
     if (err) {
       throw(err);
@@ -114,8 +123,6 @@ fs.readFile(dataFileName, 'utf8', (err, data) => {
       file = fd;
     }
   });
-  */
-  // <<<<<<<<<<<<<<
 
 });
 
