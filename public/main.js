@@ -6,6 +6,8 @@ $(document).ready(function() {
     var commands = [];
     var currentCommand = null;
 
+    var objs = {};
+
     var mapView = $('#map');
     var messagesHtml = '';
     var interval;
@@ -15,6 +17,31 @@ $(document).ready(function() {
     var selectionInterval;
     var movementInterval;
     var pauseTimeout;
+
+    // --- Obj ----------------------------------------------
+
+    class Obj {
+        constructor() {
+            this.id = -1;
+            this.src = '';
+            this.x = 0;
+            this.y = 0;
+            this.w = 0;
+            this.h = 0;
+            this.px = 0;
+            this.py = 0;
+        }
+        deserialize(raw) {
+            this.id = raw.id;
+            this.src = raw.src;
+            this.x = parseFloat(raw.x) || 0;
+            this.y = parseFloat(raw.y) || 0;
+            this.w = parseFloat(raw.w) || 0;
+            this.h = parseFloat(raw.h) || 0;
+            this.px = parseFloat(raw.px) || 0;
+            this.py = parseFloat(raw.py) || 0;
+        }
+    }
 
     // --- Commands ----------------------------------------------
 
@@ -80,31 +107,26 @@ $(document).ready(function() {
     }
 
     function cmdMove(cmd) {
-        var view = $('#' + cmd.id);
-        var stepsLeft = 10;
-        var currentX = parseFloat(view.attr('x'));
-        var currentY = parseFloat(view.attr('y'));
+        var obj = getObj(cmd.id);
+        var stepsLeft = 100;
         var targetX = parseFloat(cmd.x);
         var targetY = parseFloat(cmd.y);
-        var xStep = (targetX - currentX) / 10;
-        var yStep = (targetY - currentY) / 10;
+        var xStep = (targetX - obj.x) / stepsLeft;
+        var yStep = (targetY - obj.y) / stepsLeft;
 
         clearInterval(movementInterval);
         movementInterval = setInterval(
             function() {
-                currentX += xStep;
-                currentY += yStep;
-                view.css('left', currentX);
-                view.css('top', currentY);
                 stepsLeft--;
+                obj.x += xStep;
+                obj.y += yStep;
+                positionObj(obj);
                 if (stepsLeft < 0) {
                     clearInterval(movementInterval);
-                    view.attr('x', targetX);
-                    view.attr('y', targetY);
                     finishCurrentCommand();
                 }
             },
-            100
+            10
         );
     }
 
@@ -119,16 +141,29 @@ $(document).ready(function() {
 
     // --- Objects -----------------------------------------------
 
-    function addObj(obj) {
-        obj.x   = parseInt(obj.x) || 0;
-        obj.y   = parseInt(obj.y) || 0;
-        obj.w   = parseInt(obj.w) || 0;
-        obj.h   = parseInt(obj.h) || 0;
-        obj.px  = parseInt(obj.px) || 0;
-        obj.py  = parseInt(obj.py) || 0;
+    function addObj(raw) {
+        if (!raw.id)
+            return;
 
+        var obj = new Obj();
+        obj.deserialize(raw);
+
+        objs['o' + obj.id] = obj;
         mapView.append('<img id="' + obj.id + '">');
-        var v =  $('#' + obj.id);
+
+        updateObj(obj);
+    }
+
+    function getObj(id) {
+        return objs['o' + id];
+    }
+
+    function getObjView(obj) {
+        return $('#' + obj.id);
+    }
+
+    function updateObj(obj) {
+        var v =  getObjView(obj);
         v.attr('src', 'img/' + obj.src + '.png');
         v.css('width', obj.w + 'px');
         v.css('height', obj.h + 'px');
@@ -136,12 +171,11 @@ $(document).ready(function() {
             event.stopImmediatePropagation();
             selectObj(v);
         });
-
         positionObj(obj);
     }
 
     function positionObj(obj) {
-        var v =  $('#' + obj.id);
+        var v =  getObjView(obj);
         var x = Math.floor((mapWidth / 2) + obj.x - ((obj.w / 2) + obj.px));
         var y = Math.floor((mapHeight / 2) + obj.y - (obj.h -  obj.py));
         v.css('left', x + 'px');
@@ -161,7 +195,7 @@ $(document).ready(function() {
         selectionInterval = setInterval(
             function() {
                 var cur = parseFloat(view.css('opacity'));
-                view.css('opacity', cur ? 0 : 1);
+                view.css('opacity', (cur && !currentCommand) ? 0 : 1);
             },
             500
         );
@@ -209,8 +243,8 @@ $(document).ready(function() {
     window.addEventListener('resize', updateScenePos);
     $('#map').click(function(e) {
         if (selectedObj) {
-            var x = e.clientX - $('#map').offset().left;
-            var y = e.clientY - $('#map').offset().top;
+            var x = (e.clientX - $('#map').offset().left) - Math.floor(mapWidth / 2);
+            var y = (e.clientY - $('#map').offset().top) - Math.floor(mapHeight / 2);
             requestMoveSelected(x, y);
         }
     });
