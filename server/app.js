@@ -79,7 +79,7 @@ app.post('/api/move', (req, res) => {
     y:req.body.y
   }
 
-  addCommand(cmd);
+  // <<<<<<<<<<<<<<<<<<<<<< dont store <<<<<<<<<<<<<<<<< addCommand(cmd);
   res.send(JSON.stringify([cmd]));
 });
 

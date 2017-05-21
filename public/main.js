@@ -24,6 +24,7 @@ $(document).ready(function() {
         constructor() {
             this.id = -1;
             this.src = '';
+            this.selectable = false;
             this.x = 0;
             this.y = 0;
             this.w = 0;
@@ -34,6 +35,7 @@ $(document).ready(function() {
         deserialize(raw) {
             this.id = raw.id;
             this.src = raw.src;
+            this.selectable = (raw.selectable == 'true');
             this.x = parseFloat(raw.x) || 0;
             this.y = parseFloat(raw.y) || 0;
             this.w = parseFloat(raw.w) || 0;
@@ -107,36 +109,51 @@ $(document).ready(function() {
     }
 
     function cmdMove(cmd) {
-        var obj = getObj(cmd.id);
-        var stepsLeft = 100;
-        var targetX = parseFloat(cmd.x);
-        var targetY = parseFloat(cmd.y);
-        var xStep = (targetX - obj.x) / stepsLeft;
-        var yStep = (targetY - obj.y) / stepsLeft;
+        const pixelsPerMillisecond = 0.1;
+        const millisecondsPerStep = 25;
+        const pixelsPerStep = pixelsPerMillisecond * millisecondsPerStep;
+
+        let obj = getObj(cmd.id);
+        let x1 = obj.x;
+        let y1 = obj.y;
+        let x2 = parseFloat(cmd.x);
+        let y2 = parseFloat(cmd.y);
+        let xDistance = x2 - x1;
+        let yDistance = y2 - y1;
+        let distance = Math.hypot(xDistance, yDistance);
+        let millisecondsForPath = distance / pixelsPerMillisecond;
+        let stepsCount = Math.round(millisecondsForPath / millisecondsPerStep);
+        let xStep = (x2 - x1) / stepsCount;
+        let yStep = (y2 - y1) / stepsCount;
 
         clearInterval(movementInterval);
         movementInterval = setInterval(
             function() {
-                stepsLeft--;
-                obj.x += xStep;
-                obj.y += yStep;
-                positionObj(obj);
-                if (stepsLeft < 0) {
+                if (--stepsCount > 0) {
+                    obj.x += xStep;
+                    obj.y += yStep;
+                    positionObj(obj);
+                } else {
+                    obj.x = x2;
+                    obj.y = y2;
                     clearInterval(movementInterval);
+                    positionObj(obj);
                     finishCurrentCommand();
                 }
             },
-            10
+            millisecondsPerStep
         );
     }
 
     // --- Requests ----------------------------------------------
 
     function requestMoveSelected(x, y) {
-        var cmd = {id:selectedObj.attr('id'), x:x, y:y};
-        post('move', cmd, function(s) {
-            onCommandsReceived(s);
-        });
+        if (selectedObj) {
+            var cmd = {id:selectedObj.id, x:x, y:y};
+            post('move', cmd, function(s) {
+                onCommandsReceived(s);
+            });
+        }
     }
 
     // --- Objects -----------------------------------------------
@@ -149,9 +166,20 @@ $(document).ready(function() {
         obj.deserialize(raw);
 
         objs['o' + obj.id] = obj;
-        mapView.append('<img id="' + obj.id + '">');
 
+        addObjView(obj);
         updateObj(obj);
+    }
+
+    function addObjView(obj) {
+        mapView.append('<img id="' + obj.id + '">');
+        var v = getObjView(obj);
+        if (obj.selectable) {
+            v.css('cursor', 'pointer');
+        } else {
+            v.css('cursor', 'auto');
+            v.css('pointer-events', 'none');
+        }
     }
 
     function getObj(id) {
@@ -180,17 +208,32 @@ $(document).ready(function() {
         var y = Math.floor((mapHeight / 2) + obj.y - (obj.h -  obj.py));
         v.css('left', x + 'px');
         v.css('top', y + 'px');
+        v.css('z-index', parseInt(obj.y));
         v.attr('x', x);
         v.attr('y', y);
+        v.css('opacity', 1); // Если двинули мигающий объект, то пусть он размигнёт
+    }
+
+    function positionAll() {
+        for (var id in objs) {
+            positionObj(objs[id]);
+        }
     }
 
     function selectObj(view) {
-        if (view === selectedObj) {
+        var obj = getObj(view.attr('id'));
+
+        if (obj === selectedObj) {
             deselectObj();
             return;
         }
+
+        if (!obj.selectable) {
+            return;
+        }
+
         deselectObj();
-        selectedObj = view;
+        selectedObj = obj;
         view.css('opacity', 0);
         selectionInterval = setInterval(
             function() {
@@ -204,7 +247,8 @@ $(document).ready(function() {
     function deselectObj() {
         if (selectedObj) {
             clearInterval(selectionInterval);
-            selectedObj.css('opacity', 1);
+            var view = getObjView(selectedObj);
+            view.css('opacity', 1);
             selectedObj = null;
         }
     }
@@ -228,6 +272,7 @@ $(document).ready(function() {
         mapView.css('height', mapHeight + 'px');
         mapView.css('left', Math.floor((sw / 2) - (mapWidth / 2)) + 'px');
         mapView.css('top', Math.floor((sh / 2) - (mapHeight / 2)) + 'px');
+        positionAll();
     }
 
     function onSendClick() {
