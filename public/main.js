@@ -9,6 +9,7 @@ $(document).ready(function() {
     var objs = {};
 
     var mapView = $('#map');
+    var logView = $('#log');
     var messagesHtml = '';
     var interval;
 
@@ -16,7 +17,6 @@ $(document).ready(function() {
 
     var selectionInterval;
     var movementInterval;
-    var pauseTimeout;
 
     // --- Obj ----------------------------------------------
 
@@ -31,6 +31,7 @@ $(document).ready(function() {
             this.h = 0;
             this.px = 0;
             this.py = 0;
+            this.direction = 1;
         }
         deserialize(raw) {
             this.id = raw.id;
@@ -73,10 +74,11 @@ $(document).ready(function() {
 
         currentCommand = commands.shift();
         switch(currentCommand.t) {
-            case 'obj':     cmdAddObject(currentCommand);   break;
-            case 'message': cmdMessage(currentCommand);     break;
-            case 'pause':   cmdPause(currentCommand);       break;
-            case 'move':    cmdMove(currentCommand);        break;
+            case 'obj':         cmdAddObject(currentCommand);   break;
+            case 'log':         cmdLog(currentCommand);         break;
+            case 'clearlog':    cmdClearLog(currentCommand);    break;
+            case 'pause':       cmdPause(currentCommand);       break;
+            case 'move':        cmdMove(currentCommand);        break;
         }
     }
 
@@ -87,25 +89,31 @@ $(document).ready(function() {
 
     function cmdAddObject(cmd) {
         addObj(cmd);
-        finishCurrentCommand();
+        setTimeout(function() {
+            finishCurrentCommand();
+        }, 100);
     }
 
-    function cmdMessage(cmd) {
+    function cmdLog(cmd) {
         messagesHtml += cmd.text + '<br>';
-        $('#messages').html(messagesHtml);
+        $('#log').html(messagesHtml);
+        setTimeout(function() {
+            finishCurrentCommand();
+        }, 100);
+    }
 
-        finishCurrentCommand();
+    function cmdClearLog(cmd) {
+        messagesHtml = '';
+        $('#log').html(messagesHtml);
+        setTimeout(function() {
+            finishCurrentCommand();
+        }, 100);
     }
 
     function cmdPause(cmd) {
-        clearTimeout(pauseTimeout);
-        pauseTimeout = setTimeout(
-            function(){
-                clearTimeout(pauseTimeout);
-                finishCurrentCommand();
-            },
-            100
-        )
+        setTimeout(function() {
+            finishCurrentCommand();
+        }, parseFloat(cmd.seconds) * 1000);
     }
 
     function cmdMove(cmd) {
@@ -125,6 +133,11 @@ $(document).ready(function() {
         let stepsCount = Math.round(millisecondsForPath / millisecondsPerStep);
         let xStep = (x2 - x1) / stepsCount;
         let yStep = (y2 - y1) / stepsCount;
+
+        if(x2 >= x1)
+            obj.direction = 1;
+        else
+            obj.direction = -1;
 
         clearInterval(movementInterval);
         movementInterval = setInterval(
@@ -212,6 +225,11 @@ $(document).ready(function() {
         v.attr('x', x);
         v.attr('y', y);
         v.css('opacity', 1); // Если двинули мигающий объект, то пусть он размигнёт
+
+        if(obj.direction == -1)
+            v.css('transform', 'scaleX(-1)');
+        else
+            v.css('transform', '');
     }
 
     function positionAll() {
@@ -268,10 +286,17 @@ $(document).ready(function() {
     function updateScenePos() {
         var sw = $(window).width();
         var sh = $(window).height();
+
         mapView.css('width', mapWidth + 'px');
         mapView.css('height', mapHeight + 'px');
         mapView.css('left', Math.floor((sw / 2) - (mapWidth / 2)) + 'px');
         mapView.css('top', Math.floor((sh / 2) - (mapHeight / 2)) + 'px');
+
+        logView.css('width', mapWidth + 'px');
+        logView.css('height', mapHeight + 'px');
+        logView.css('left', Math.floor((sw / 2) - (mapWidth / 2)) + 'px');
+        logView.css('top', Math.floor((sh / 2) - (mapHeight / 2)) + 'px');
+
         positionAll();
     }
 

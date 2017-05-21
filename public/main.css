@@ -8,35 +8,24 @@
 	font-size:11px;
 }
 
-#logo {
+#log {
 	position: absolute;
-	z-index: 1;
-	left: 10px;
-	top: 10px;
-	font-weight: bold;
-	font-family: arial;
-	font-size: 17px;
-}
-
-#chat {
-	position: absolute;
-	z-index: 3;
+	z-index: 2;
+	padding: 10px;
 	overflow: hidden;
 	top: 30px; left:10px;
 	width:300px;
 	user-select: none;
-	cursor: default;
+	pointer-events: none;
+	font-size: 16px;
+	font-family: serif;
 }
-
-form {margin-top: 10px; margin-bottom:10px;}
-
-img.teut {width: 12px; height: 12px;}
 
 /* -- map -- */
 
 #map {
 	position: absolute;
-	z-index: 2;
+	z-index: 1;
 	border: 1px solid rgba(0,0,0,0.03);
 	background-color:#E0E0E0;
 	user-select: none;
