@@ -17,8 +17,8 @@
 	width:300px;
 	user-select: none;
 	pointer-events: none;
-	font-size: 16px;
-	font-family: serif;
+	font-size: 10px;
+	font-family: verdana;
 }
 
 /* -- map -- */
@@ -32,8 +32,9 @@
 	cursor: default;
 }
 
-#map img {
+#map div {
 	position: absolute;
+	background-image: url(img/atlas.png);
 	cursor: pointer;
 	/*border: 1px solid red; */
 }

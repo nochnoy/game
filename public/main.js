@@ -32,6 +32,7 @@ $(document).ready(function() {
             this.px = 0;
             this.py = 0;
             this.direction = 1;
+            this.type = '';
         }
         deserialize(raw) {
             this.id = raw.id;
@@ -43,6 +44,7 @@ $(document).ready(function() {
             this.h = parseFloat(raw.h) || 0;
             this.px = parseFloat(raw.px) || 0;
             this.py = parseFloat(raw.py) || 0;
+            this.type = raw.type || '';
         }
     }
 
@@ -56,14 +58,6 @@ $(document).ready(function() {
         }
         playNextCommand();
     }
-    
-    /*function playCommands() {
-        clearInterval(interval);
-        if (commands.length) {
-            interval = setInterval(playNextCommand, 10);
-            playNextCommand();
-        }
-    }*/
 
     function playNextCommand() {
         if (currentCommand)
@@ -74,11 +68,13 @@ $(document).ready(function() {
 
         currentCommand = commands.shift();
         switch(currentCommand.t) {
-            case 'obj':         cmdAddObject(currentCommand);   break;
+            case 'add':         cmdAddObject(currentCommand);   break;
+            case 'del':         cmdDeleteObject(currentCommand);break;
             case 'log':         cmdLog(currentCommand);         break;
             case 'clearlog':    cmdClearLog(currentCommand);    break;
             case 'pause':       cmdPause(currentCommand);       break;
-            case 'move':        cmdMove(currentCommand);        break;
+            case 'go':          cmdGo(currentCommand);          break;
+            case 'gameover':    cmdGameOver();                  break;
         }
     }
 
@@ -94,12 +90,20 @@ $(document).ready(function() {
         }, 100);
     }
 
+    function cmdDeleteObject(cmd) {
+        var obj = getObj(cmd.id);
+        if (obj) {
+            removeObj(obj);
+        }
+        finishCurrentCommand();
+    }
+
     function cmdLog(cmd) {
         messagesHtml += cmd.text + '<br>';
         $('#log').html(messagesHtml);
         setTimeout(function() {
             finishCurrentCommand();
-        }, 100);
+        }, Math.random() * 50 + 30);
     }
 
     function cmdClearLog(cmd) {
@@ -113,10 +117,10 @@ $(document).ready(function() {
     function cmdPause(cmd) {
         setTimeout(function() {
             finishCurrentCommand();
-        }, parseFloat(cmd.seconds) * 1000);
+        }, (parseFloat(cmd.seconds) || 1) * 1000);
     }
 
-    function cmdMove(cmd) {
+    function cmdGo(cmd) {
         const pixelsPerMillisecond = 0.1;
         const millisecondsPerStep = 25;
         const pixelsPerStep = pixelsPerMillisecond * millisecondsPerStep;
@@ -158,6 +162,11 @@ $(document).ready(function() {
         );
     }
 
+    function cmdGameOver() {
+        commands.length = 0;
+        finishCurrentCommand();
+    }
+
     // --- Requests ----------------------------------------------
 
     function requestMoveSelected(x, y) {
@@ -181,12 +190,24 @@ $(document).ready(function() {
         objs['o' + obj.id] = obj;
 
         addObjView(obj);
+        initObjType(obj);
         updateObj(obj);
     }
 
+    function removeObj(obj) {
+        destroyObj(obj);
+        removeObjView(obj);
+        delete objs['o' + obj.id];
+    }
+
     function addObjView(obj) {
-        mapView.append('<img id="' + obj.id + '">');
+        mapView.append('<div id="' + obj.id + '">');
+
         var v = getObjView(obj);
+
+        v.css('backgroundImage', 'url(img/' + obj.src + '.png)');
+        v.css('backgroundPosition', '0px 0px');
+
         if (obj.selectable) {
             v.css('cursor', 'pointer');
         } else {
@@ -195,17 +216,12 @@ $(document).ready(function() {
         }
     }
 
-    function getObj(id) {
-        return objs['o' + id];
-    }
-
-    function getObjView(obj) {
-        return $('#' + obj.id);
+    function removeObjView(obj) {
+        $('#' + obj.id).remove();
     }
 
     function updateObj(obj) {
         var v =  getObjView(obj);
-        v.attr('src', 'img/' + obj.src + '.png');
         v.css('width', obj.w + 'px');
         v.css('height', obj.h + 'px');
         v.click(function(event) {
@@ -230,6 +246,43 @@ $(document).ready(function() {
             v.css('transform', 'scaleX(-1)');
         else
             v.css('transform', '');
+    }
+
+    function initObjType(obj) {
+        switch(obj.type) {
+
+            case 'fire1':
+                var v = getObjView(obj);
+                obj.curFrame = 0;
+                clearInterval(obj.fire1Intr);
+                obj.fire1Intr = setInterval(function() {
+                    v.css('backgroundPosition', '-' + (obj.curFrame * 50) + 'px 0px');
+                    obj.curFrame ++;
+                    if (obj.curFrame >= 9) {
+                        obj.curFrame = 0;
+                    }
+                }, 100);
+                break;
+
+        }
+    }
+
+    function destroyObj(obj) {
+        switch(obj.type) {
+
+            case 'fire1':
+                clearInterval(obj.fire1Intr);
+                break;
+
+        }
+    }
+
+    function getObj(id) {
+        return objs['o' + id];
+    }
+
+    function getObjView(obj) {
+        return $('#' + obj.id);
     }
 
     function positionAll() {
