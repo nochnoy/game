@@ -8,6 +8,7 @@ $(document).ready(function() {
 
     var objs = {};
 
+    var bgView = $('#bg');
     var mapView = $('#map');
     var logView = $('#log');
     var messagesHtml = '';
@@ -74,7 +75,9 @@ $(document).ready(function() {
             case 'clearlog':    cmdClearLog(currentCommand);    break;
             case 'pause':       cmdPause(currentCommand);       break;
             case 'go':          cmdGo(currentCommand);          break;
+            case 'bg':          cmdBg(currentCommand);          break;
             case 'gameover':    cmdGameOver();                  break;
+            case 'select':      cmdSelect(currentCommand);      break;
         }
     }
 
@@ -162,8 +165,26 @@ $(document).ready(function() {
         );
     }
 
-    function cmdGameOver() {
+    function cmdGameOver(cmd) {
         commands.length = 0;
+        finishCurrentCommand();
+    }
+
+    function cmdBg(cmd) {
+        $('#bg').empty();
+        $('#bg').append('<img src="img/' +cmd.src + '.jpg">');
+        $(document.body).css('background-color', 'black');
+        finishCurrentCommand();
+    }
+
+    function cmdSelect(cmd) {
+        var obj = getObj(cmd.id);
+        if (obj) {
+            var v = getObjView(obj);
+            if (v) {
+                selectObj(v);
+            }
+        }
         finishCurrentCommand();
     }
 
@@ -172,7 +193,7 @@ $(document).ready(function() {
     function requestMoveSelected(x, y) {
         if (selectedObj) {
             var cmd = {id:selectedObj.id, x:x, y:y};
-            post('move', cmd, function(s) {
+            post('go', cmd, function(s) {
                 onCommandsReceived(s);
             });
         }
@@ -339,6 +360,11 @@ $(document).ready(function() {
     function updateScenePos() {
         var sw = $(window).width();
         var sh = $(window).height();
+
+        bgView.css('width', mapWidth + 'px');
+        bgView.css('height', mapHeight + 'px');
+        bgView.css('left', Math.floor((sw / 2) - (mapWidth / 2)) + 'px');
+        bgView.css('top', Math.floor((sh / 2) - (mapHeight / 2)) + 'px');
 
         mapView.css('width', mapWidth + 'px');
         mapView.css('height', mapHeight + 'px');

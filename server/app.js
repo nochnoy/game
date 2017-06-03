@@ -71,9 +71,9 @@ app.post('/api/say', (req, res) => {
   res.send(getMessagesHTML());
 });
 
-app.post('/api/move', (req, res) => {
+app.post('/api/go', (req, res) => {
   var cmd = {
-    t:"move", 
+    t:"go", 
     id:req.body.id,
     x:req.body.x,
     y:req.body.y
