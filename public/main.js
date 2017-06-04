@@ -32,8 +32,16 @@ $(document).ready(function() {
             this.h = 0;
             this.px = 0;
             this.py = 0;
+            this.atlasX = 0;
+            this.atlasY = 0;
             this.direction = 1;
             this.type = '';
+            this.view = null;
+        }
+        initView() {}
+        animation(a) {}
+        draw(xOffset = 0, yOffset = 0) {
+            this.view.css('backgroundPosition', '-' + (this.atlasX + (xOffset * this.w)) + 'px -' + (this.atlasY + (yOffset * this.h)) + 'px');
         }
         deserialize(raw) {
             this.id = raw.id;
@@ -46,6 +54,63 @@ $(document).ready(function() {
             this.px = parseFloat(raw.px) || 0;
             this.py = parseFloat(raw.py) || 0;
             this.type = raw.type || '';
+        }
+    }
+
+    class Man extends Obj {
+        constructor() {
+            super();
+            this.panic = false;
+            this.goPhase = 0;
+            this.currentAnimation = 'stay';
+            this.animationInterval = setInterval(function(that){that.animate()}, 80, this);
+        }
+        animation(a) {
+            this.currentAnimation = a;
+        }
+        animate() {
+            let fistFrame = 0;
+            if (this.panic) {
+                fistFrame = 3;
+            }
+            switch(this.currentAnimation) {
+                case 'stay':
+                    this.draw(fistFrame + 0, 0);
+                    break;
+                case 'go':
+                    this.draw(fistFrame + 1 + this.goPhase, 0);
+                    if (++this.goPhase > 1) {
+                        this.goPhase = 0;
+                    }
+                    break;
+            }
+        }
+        setState(stateCmd) {
+            if (stateCmd.hasOwnProperty('panic')) {
+                this.panic = (stateCmd.panic == 'true');
+            }
+        }
+    }
+
+    class ManTot extends Man {
+        constructor() {
+            super();
+            this.atlasX = 0;
+            this.atlasY = 80;
+        }
+        initView() {
+            this.animate();
+        }
+    }
+
+    class ManKek extends Man {
+        constructor() {
+            super();
+            this.atlasX = 0;
+            this.atlasY = 130;
+        }
+        initView() {
+            this.animate();
         }
     }
 
@@ -78,6 +143,7 @@ $(document).ready(function() {
             case 'bg':          cmdBg(currentCommand);          break;
             case 'gameover':    cmdGameOver();                  break;
             case 'select':      cmdSelect(currentCommand);      break;
+            case 'state':       cmdState(currentCommand);       break;
         }
     }
 
@@ -146,6 +212,8 @@ $(document).ready(function() {
         else
             obj.direction = -1;
 
+        obj.animation('go');
+
         clearInterval(movementInterval);
         movementInterval = setInterval(
             function() {
@@ -157,6 +225,7 @@ $(document).ready(function() {
                     obj.x = x2;
                     obj.y = y2;
                     clearInterval(movementInterval);
+                    obj.animation('stay');
                     positionObj(obj);
                     finishCurrentCommand();
                 }
@@ -188,6 +257,14 @@ $(document).ready(function() {
         finishCurrentCommand();
     }
 
+    function cmdState(cmd) {
+        var obj = getObj(cmd.id);
+        if (obj) {
+           obj.setState(cmd);
+        }
+        finishCurrentCommand();
+    }
+
     // --- Requests ----------------------------------------------
 
     function requestMoveSelected(x, y) {
@@ -201,13 +278,22 @@ $(document).ready(function() {
 
     // --- Objects -----------------------------------------------
 
+    function objFactory(raw) {
+        let obj;
+        switch (raw.type) {
+            case 'man_tot': obj = new ManTot; break;
+            case 'man_kek': obj = new ManKek; break;
+            default:        obj = new Obj(); break;
+        }
+        obj.deserialize(raw);
+        return obj;
+    }
+
     function addObj(raw) {
         if (!raw.id)
             return;
 
-        var obj = new Obj();
-        obj.deserialize(raw);
-
+        var obj = objFactory(raw);
         objs['o' + obj.id] = obj;
 
         addObjView(obj);
@@ -235,6 +321,9 @@ $(document).ready(function() {
             v.css('cursor', 'auto');
             v.css('pointer-events', 'none');
         }
+
+        obj.view = v;
+        obj.initView();
     }
 
     function removeObjView(obj) {
@@ -270,21 +359,21 @@ $(document).ready(function() {
     }
 
     function initObjType(obj) {
-        switch(obj.type) {
-
-            case 'fire1':
-                var v = getObjView(obj);
-                obj.curFrame = 0;
-                clearInterval(obj.fire1Intr);
-                obj.fire1Intr = setInterval(function() {
-                    v.css('backgroundPosition', '-' + (obj.curFrame * 50) + 'px 0px');
-                    obj.curFrame ++;
-                    if (obj.curFrame >= 9) {
-                        obj.curFrame = 0;
-                    }
-                }, 100);
-                break;
-
+        var v = getObjView(obj);
+        if (v) {
+            switch(obj.type) {
+                case 'fire1':
+                    obj.curFrame = 0;
+                    clearInterval(obj.fire1Intr);
+                    obj.fire1Intr = setInterval(function() {
+                        v.css('backgroundPosition', '-' + (obj.curFrame * 50) + 'px 0px');
+                        obj.curFrame ++;
+                        if (obj.curFrame >= 9) {
+                            obj.curFrame = 0;
+                        }
+                    }, 100);
+                    break;
+            }
         }
     }
 
