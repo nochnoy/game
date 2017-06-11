@@ -11,6 +11,8 @@ var Map = require('./map');
 
 // ----------------------------------------------------------------------------
 
+let paramReadOnly = false;
+
 let dataFileName = 'data/data.txt';
 let newline = '\r\n';
 
@@ -22,15 +24,39 @@ var file;
 
 function addCommand(cmd) {
   commands.push(cmd);
-  fs.write(file, JSON.stringify(cmd) + newline, (err) => {
-    if (err) {
-      throw err + '?';
-    }
-  });
+  if (paramReadOnly) {
+		console.log('Changes not saved into the data file due to parameter "-nosave"');
+  } else {
+	  fs.write(file, JSON.stringify(cmd) + newline, (err) => {
+		if (err) {
+		  throw err + '?';
+		}
+	  });
+  }
 }
 
 function sendCommands(fromId) {
 
+}
+
+function parseDataFile(data) {
+  commands.length = 0;
+  var a = data.split(newline);
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] && a.length > 0) {
+      commands.push(JSON.parse(a[i]));
+    }
+  }
+}
+
+function parseCommandPromptParams() {
+  for (var i = 0; i < process.argv.length; i++) {
+    switch (process.argv[i]) {
+      case '-readonly':	
+        paramReadOnly = true; 
+        break;
+    }
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -63,7 +89,20 @@ app.get('/api/:cmd/:param1', (req, res) => {
 });
 
 app.post('/api/get', (req, res) => {
-  res.send(JSON.stringify(commands));
+  if (paramReadOnly) {
+    // В режиме read only при каждой перезагрузке браузера
+    // юзер должен получать самую свежую инфу из датафайла. 
+    // Подсасываем её.
+    fs.readFile(dataFileName, 'utf8', (err, data) => {
+      if (err) {
+        throw(err);
+      }
+      parseDataFile(data);
+      res.send(JSON.stringify(commands));
+    });
+  } else {
+    res.send(JSON.stringify(commands));
+  }
 });
 
 app.post('/api/say', (req, res) => {
@@ -104,25 +143,23 @@ app.use(function(err, req, res, next) {
 
 // -- Start -----------------------------------------------
 
-fs.readFile(dataFileName, 'utf8', (err, data) => {
-  if (err)
-    throw(err);
+parseCommandPromptParams();
 
-  commands.length = 0;
-  var a = data.split(newline);
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] && a.length > 0) {
-      commands.push(JSON.parse(a[i]));
-    }
+fs.readFile(dataFileName, 'utf8', (err, data) => {
+  if (err) {
+    throw(err);
   }
-                
-  file = fs.open(dataFileName, 'a', (err, fd) => {
-    if (err) {
-      throw(err);
-    } else {      
-      file = fd;
-    }
-  });
+  parseDataFile(data);
+
+  if (!paramReadOnly) {
+    file = fs.open(dataFileName, 'a', (err, fd) => {
+      if (err) {
+        throw(err);
+      } else {      
+        file = fd;
+      }
+    });
+  }
 
 });
 

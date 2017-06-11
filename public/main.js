@@ -242,7 +242,7 @@ $(document).ready(function() {
     function cmdBg(cmd) {
         $('#bg').empty();
         $('#bg').append('<img src="img/' +cmd.src + '.jpg">');
-        $(document.body).css('background-color', 'black');
+        $(document.body).css('background-color', cmd.color);
         finishCurrentCommand();
     }
 
